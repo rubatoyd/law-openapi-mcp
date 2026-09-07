@@ -193,22 +193,97 @@ def test_tools_return_dict_not_exception(monkeypatch):
     json.dumps(out, ensure_ascii=False)
 
 
-def test_law_targets_exposes_the_trap_table():
+def test_law_targets_groups_instead_of_dumping_72_rows():
+    """72종을 평평하게 늘어놓으면 호출자가 고를 수 없고 응답만 길어진다."""
     from law_mcp import server
     fn = server.law_targets.fn if hasattr(server.law_targets, "fn") else server.law_targets
     out = fn()
-    assert out["갈래"]["ordin"]["본문조회_파라미터"] == "MST"
-    assert out["갈래"]["prec"]["본문조회_파라미터"] == "ID"
+    assert out["갈래_수"] == 72
+    groups = out["갈래"]
+    assert "법령해석(부처 39종)" in groups
+    assert len(groups["법령해석(부처 39종)"]) == 39
+    assert "law" in groups["법령·규칙"]
+    # 각 갈래는 정확히 한 묶음에만 들어가야 한다(중복·누락 없이 72종)
+    flat = [c for codes in groups.values() for c in codes]
+    assert len(flat) == 72 and len(set(flat)) == 72
+    assert set(out["본문_없는_갈래"]) == {"licbyl", "ordinbyl", "moefCgmExpc", "ntsCgmExpc"}
     assert "lsHistory" in out["다루지_않는_target"]
     json.dumps(out, ensure_ascii=False)
 
 
-def test_every_registered_target_has_a_distinct_identifier_field():
-    """레지스트리가 복사·붙여넣기로 망가졌는지 보는 최소 검사."""
+def test_unknown_target_error_does_not_dump_every_target():
+    """오류 메시지가 72종을 전부 뱉으면 화면을 덮는다 — 묶음 요약이어야 한다."""
+    from law_mcp.config import resolve_target
+    with pytest.raises(ValueError) as e:
+        resolve_target("zzz")
+    msg = str(e.value)
+    assert "law_targets" in msg
+    assert msg.count("CgmExpc") <= 6, "부처 39종을 전부 나열하고 있다"
+
+
+def test_registry_entries_are_internally_consistent():
+    """레지스트리가 복사·붙여넣기로 망가졌는지 보는 최소 검사.
+
+    ⚠️ `id_param` 을 `("MST","ID")` 로 못박고 있었는데 **틀렸다** — `lstrm` 은
+       `trmSeqs` 다(실측). 내가 쓴 테스트가 내 짐작을 굳히고 있었다.
+    """
     for code, t in TARGETS.items():
-        assert t.id_param in ("MST", "ID"), code
-        assert t.id_field.endswith(("번호",)), code
-        assert t.list_root and t.record_tag and t.body_root, code
+        assert t.code == code, code
+        assert t.id_param, code
+        assert t.id_field, code
+        assert t.list_root and t.record_tag, code
+        assert t.label, code
+        # 본문이 있다면 루트 태그를 알아야 하고, 없다면 비어 있어야 한다.
+        assert bool(t.body_root) == t.has_body, code
+
+
+def test_registry_covers_the_measured_catalog():
+    """2026-09-08 전수 실측(62종) + 초판 10종 = 72종."""
+    assert len(TARGETS) == 72
+    # T41 이 미해결로 남긴 부처 1차 법령해석 — 39종 전부 들어와야 한다.
+    ministry = [c for c in TARGETS if c.endswith("CgmExpc")]
+    assert len(ministry) == 39
+    assert "moeCgmExpc" in TARGETS, "교육부 법령해석"
+
+
+def test_ministry_targets_share_one_shape():
+    """부처 39종은 실측상 전부 같은 모양이다 — 하나라도 어긋나면 표가 오염된 것이다."""
+    for code, t in TARGETS.items():
+        if not code.endswith("CgmExpc"):
+            continue
+        assert t.list_root == "CgmExpc", code
+        assert t.record_tag == "cgmExpc", code
+        assert t.id_param == "ID", code
+        assert t.id_field == "법령해석일련번호", code
+
+
+def test_lstrm_uses_its_own_identifier_param():
+    """🔴 `MST`/`ID` 만 있는 줄 알았다 — 법령용어는 `trmSeqs` 다(상세링크가 알려줬다)."""
+    assert TARGETS["lstrm"].id_param == "trmSeqs"
+    assert TARGETS["lstrm"].id_field == "법령용어ID"
+
+
+def test_record_tag_mismatch_is_the_norm_not_the_exception():
+    """45/62 가 제 이름이 아닌 레코드 태그를 쓴다 — 규칙으로 유추하면 대부분 틀린다."""
+    mismatched = [c for c, t in TARGETS.items() if t.record_tag.lower() != c.lower()]
+    assert len(mismatched) >= 45
+    assert "school" in mismatched and TARGETS["school"].record_tag == "admrul"
+    assert TARGETS["ttSpecialDecc"].record_tag == "decc"
+    assert TARGETS["admbyl"].record_tag == "admrulbyl"
+
+
+def test_targets_without_xml_body_are_marked():
+    """별표·서식 본문과 일부 부처 해석은 XML 본문이 없다(HTML). 표에 적어 둔다."""
+    no_body = {c for c, t in TARGETS.items() if not t.has_body}
+    assert no_body == {"licbyl", "ordinbyl", "moefCgmExpc", "ntsCgmExpc"}
+
+
+def test_body_refused_for_targets_without_xml_body():
+    """본문이 없는 갈래는 **호출 전에** 막는다 — 부르면 HTML 을 받고 파서가 헛돈다."""
+    with pytest.raises(LawError) as e:
+        LawClient(oc="stub", throttle=0.0).body("licbyl", "12345")
+    assert "본문" in str(e.value)
+    assert "별표서식파일링크" in str(e.value), "대신 무엇을 보라고 알려 줘야 한다"
 
 
 def test_log_scrubber_does_not_break_numeric_format_args(caplog):

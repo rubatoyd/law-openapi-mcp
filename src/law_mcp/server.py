@@ -21,6 +21,7 @@ from .config import (
     MAX_CALLS_PER_TOOL_CALL,
     MAX_DISPLAY,
     MINISTRY_EXPC_NOTE,
+    target_groups,
     TARGETS,
     get_oc,
     scrub,
@@ -88,13 +89,16 @@ def law_targets() -> dict:
     return {
         "수집_단위": "법령 하나가 문헌 하나다. 조문은 인용 시 위치로 넣지, "
                      "레코드로 쪼개지 않는다. 본문이 필요하면 law_body 를 쓴다.",
+        # ⚠️ 72종을 평평하게 늘어놓으면 호출자가 고를 수 없고 응답도 길어진다.
+        #    묶음별로 코드와 이름만 주고, 세부 스키마는 필요할 때 쓰도록 따로 둔다.
         "갈래": {
-            k: {"이름": t.label, "본문조회_파라미터": t.id_param,
-                "목록_식별자_필드": t.id_field, "표제_필드": t.title_field}
-            for k, t in TARGETS.items()
+            g: {k: TARGETS[k].label for k in codes}
+            for g, codes in target_groups().items()
         },
+        "갈래_수": len(TARGETS),
+        "본문_없는_갈래": {k: t.label for k, t in TARGETS.items() if not t.has_body},
         "다루지_않는_target": HTML_ONLY_TARGETS,
-        "미해결": MINISTRY_EXPC_NOTE,
+        "부처_법령해석": MINISTRY_EXPC_NOTE,
         "한계": {
             "display_상한": MAX_DISPLAY,
             "page_상한": "없음 — totalCnt 전량 회수 가능(실측)",

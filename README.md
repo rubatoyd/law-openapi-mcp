@@ -2,8 +2,9 @@
 
 법제처 **국가법령정보 OPEN API**(law.go.kr DRF)를 검색·수집하는 MCP 서버 + CLI.
 
-현행법령·행정규칙·자치법규·판례·헌재결정례·법령해석례·조약을 한 인터페이스로 조회하고,
-결과를 xlsx·csv·json·sqlite 로 내보낸다. 연구 자료수집 단계에서 반복 재사용하기 위한 도구다.
+현행법령·행정규칙·자치법규·판례·헌재결정례·행정심판례·법령해석례(법제처 + 부처 39종)·
+위원회 결정문·별표서식·조약·법령용어 등 **72종**을 한 인터페이스로 조회하고, 결과를
+xlsx·csv·json·sqlite 로 내보낸다. 연구 자료수집 단계에서 반복 재사용하기 위한 도구다.
 
 자매 저장소: [na-openapi-mcp](https://github.com/rubatoyd/na-openapi-mcp)(국회도서관) ·
 [nl-openapi-mcp](https://github.com/rubatoyd/nl-openapi-mcp)(국립중앙도서관) ·
@@ -66,20 +67,25 @@ MCP 등록:
 | `law_collect` | 갈래 × 검색어 조합을 모아 xlsx/csv/json/sqlite 로 저장 |
 | `law_citation` | 레코드를 서지 필드(발령주체·호·시행일·제정기관)로 매핑 |
 
-## 다루는 갈래
+## 다루는 갈래 — 72종
 
-| target | 갈래 | 본문 |
-|--------|------|------|
-| `law` | 현행법령 | ○ (조문 구조) |
-| `eflaw` | 시행일법령 | ○ |
-| `elaw` | 영문법령 | ○ |
-| `admrul` | 행정규칙 | ○ |
-| `ordin` | 자치법규 | ○ (조문 구조) |
-| `prec` | 판례 | △ — 데이터출처에 따라 없다(아래) |
-| `detc` | 헌재결정례 | ○ |
-| `expc` | 법령해석례 | ○ |
-| `trty` | 조약 | ○ |
-| `lsStmd` | 법령체계도 | ○ |
+| 무리 | 종수 | 보기 |
+|---|--:|---|
+| 법령·규칙 | 7 | `law` 현행법령 · `eflaw` 시행일법령 · `elaw` 영문법령 · `admrul` 행정규칙 · `ordin` 자치법규 · `lsStmd` 법령체계도 · `school` 학칙 |
+| 판례·재결 | 3 | `prec` 판례 · `detc` 헌재결정례 · `decc` 행정심판례 |
+| 법령해석 | 40 | `expc` 법제처 + **부처 39종**(`moeCgmExpc` 교육부 …) |
+| 위원회 결정문 | 12 | `ppc` 개인정보보호위 · `ftc` 공정거래위 · `nlrc` 노동위 · `nhrck` 국가인권위 … |
+| 특별행정심판 | 4 | `ttSpecialDecc` 조세심판원 · `kmstSpecialDecc` 해양안전심판원 … |
+| 별표·서식 | 3 | `licbyl` 법령 · `admbyl` 행정규칙 · `ordinbyl` 자치법규 |
+| 조약·용어 | 2 | `trty` 조약 · `lstrm` 법령용어 |
+| 그 밖 | 1 | `baiPvcs` 감사원 사전컨설팅 |
+
+전체 목록과 갈래별 실측 스키마는 `law targets` / `law_targets`,
+무엇이 있는지의 지도는 [docs/DRF_CATALOG.md](docs/DRF_CATALOG.md).
+
+**본문이 XML 로 오지 않는 4종**: `licbyl`·`ordinbyl`(별표·서식은 파일 — 목록의
+`별표서식파일링크`·`별표서식PDF파일링크` 가 원문) · `moefCgmExpc`·`ntsCgmExpc`(목록만).
+호출 전에 막고 대신 무엇을 보라고 알려 준다.
 
 `lsHistory`(법령 연혁)·`couseLs`(관련법령)는 `type=XML` 을 무시하고 HTML 을 돌려주므로
 이 서버는 다루지 않는다. 호출하면 그 사실을 알려 준다.
@@ -95,8 +101,11 @@ MCP 등록:
   결손으로 기록하고 넘어갈 일이지 오류가 아니다.
 - `display` 상한은 500(1000을 요청하면 500으로 깎이고 `numOfRows` 에 정직하게 에코된다).
 - `page` 에는 하드 상한이 없다 — `totalCnt` 전량을 회수할 수 있다.
-- 갈래마다 루트 태그·레코드 태그·식별자 파라미터가 **전부 다르고 이름에서 유추할 수 없다**
-  (`ordin` 의 레코드 태그는 `<law>`, `detc`·`trty` 는 대문자로 시작한다).
+- 갈래마다 루트 태그·레코드 태그·식별자 파라미터가 **전부 다르고 이름에서 유추할 수 없다**.
+  전수 실측 62종 중 **45종이 제 이름이 아닌 레코드 태그**를 쓴다(부처 해석 39종은 전부
+  `<cgmExpc>`, `ordin`·`lsStmd` 는 `<law>`, `school` 은 `<admrul>`). 식별자 파라미터도
+  `ID`/`MST` 만이 아니다 — `lstrm` 은 `trmSeqs`.
+- ⚠️ **`totalCnt=0` 은 target 이 무효라는 뜻이 아니다** — 검색어가 안 맞은 것일 뿐이다.
 
 자세한 근거와 재현 방법은 [docs/LAW_API_GUIDE.md](docs/LAW_API_GUIDE.md).
 

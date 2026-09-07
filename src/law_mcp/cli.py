@@ -34,11 +34,15 @@ def cmd_status(args) -> int:
 
 
 def cmd_targets(args) -> int:
-    print(f"{'target':10s} {'갈래':12s} {'본문파라미터':6s}  식별자 필드")
-    print("-" * 62)
-    for k, t in TARGETS.items():
-        print(f"{k:10s} {t.label:12s} {t.id_param:6s}  {t.id_field}")
-    print()
+    from .config import target_groups
+    total = len(TARGETS)
+    for group, codes in target_groups().items():
+        print(f"\n[{group}] {len(codes)}종")
+        for k in codes:
+            t = TARGETS[k]
+            body = t.id_param if t.has_body else "본문없음"
+            print(f"  {k:<18} {t.label:<24} {body}")
+    print(f"\n총 {total}종.")
     print("다루지 않는 target (XML 을 주지 않는다 — 실측):")
     for k, why in HTML_ONLY_TARGETS.items():
         print(f"  {k}: {why}")

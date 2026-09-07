@@ -87,6 +87,15 @@ class Target(NamedTuple):
 #
 # ✅ (1)~(7) 전부 `scripts/probe_api.py envelopes` 로 재확인된다. 초판은 (5)(6)(7)을
 #    `law` 계열과 같으리라 **짐작해서** 틀렸고, 그 탐침이 잡았다.
+#
+# 🔴 **그리고 이것은 예외가 아니라 규칙이다.** 2026-09-08 에 후보 62종을 전수 실측한
+#    결과(`scripts/probe_catalog.py`), **45종의 레코드 태그가 제 이름이 아니었다**:
+#      · 부처 법령해석 39종 → 전부 `<cgmExpc>`(루트는 `CgmExpc`)
+#      · 특별행정심판 4종   → 전부 `<decc>`(루트는 `Decc`)
+#      · `school` → `<admrul>` · `admbyl` → `<admrulbyl>`(루트 `admRulBylSearch`, 소문자 시작)
+#    본문 루트도 20가지로 제각각이다(`PpcService`·`FscService`·`SpecialDeccService`…).
+#    식별자 파라미터도 `ID`/`MST` 만이 아니다 — **`lstrm` 은 `trmSeqs`** 다.
+#    → 이 표는 손으로 적은 것이 아니라 **측정 결과를 생성한 것**이다. 규칙으로 바꾸지 말 것.
 TARGETS: dict[str, Target] = {
     "law":    Target("law",    "현행법령",   "LawSearch",    "law",    "법령일련번호",       "MST", "법령",            "법령명한글", True),
     "eflaw":  Target("eflaw",  "시행일법령", "LawSearch",    "law",    "법령일련번호",       "MST", "법령",            "법령명한글", True,
@@ -99,6 +108,74 @@ TARGETS: dict[str, Target] = {
     "expc":   Target("expc",   "법령해석례", "Expc",         "expc",   "법령해석례일련번호", "ID",  "ExpcService",     "안건명",     True),
     "trty":   Target("trty",   "조약",       "TrtySearch",   "Trty",   "조약일련번호",       "ID",  "BothTrtyService", "조약명",     True),
     "lsStmd": Target("lsStmd", "법령체계도", "LsStmdSearch", "law",    "법령일련번호",       "MST", "LsStmd",          "법령명",     True),
+
+    # ── 행정심판·결정문 ──
+    "decc": Target("decc", "행정심판례", "Decc", "decc", "행정심판재결례일련번호", "ID", "PrecService", "사건명", True),
+    # ── 별표·서식 / 용어 / 학칙 ──
+    "lstrm": Target("lstrm", "법령용어", "LsTrmSearch", "lstrm", "법령용어ID", "trmSeqs", "LsTrmService", "법령용어명", True),
+    "school": Target("school", "학칙·공단·공공기관", "AdmRulSearch", "admrul", "행정규칙일련번호", "ID", "AdmRulService", "행정규칙명", True),
+    "licbyl": Target("licbyl", "법령 별표·서식", "licBylSearch", "licbyl", "별표일련번호", "ID", "", "별표명", False),
+    "admbyl": Target("admbyl", "행정규칙 별표·서식", "admRulBylSearch", "admrulbyl", "별표일련번호", "ID", "LicBylService", "별표명", True),
+    "ordinbyl": Target("ordinbyl", "자치법규 별표·서식", "licBylSearch", "ordinbyl", "별표일련번호", "ID", "", "별표명", False),
+    # ── 위원회 결정문 12종 ──
+    "ppc": Target("ppc", "개인정보보호위원회 결정문", "Ppc", "ppc", "결정문일련번호", "ID", "PpcService", "안건명", True),
+    "eiac": Target("eiac", "고용보험심사위원회 결정문", "Eiac", "eiac", "결정문일련번호", "ID", "EiacService", "사건명", True),
+    "ftc": Target("ftc", "공정거래위원회 결정문", "Ftc", "ftc", "결정문일련번호", "ID", "FtcService", "사건명", True),
+    "acr": Target("acr", "국민권익위원회 결정문", "Acr", "acr", "결정문일련번호", "ID", "AcrService", "제목", True),
+    "fsc": Target("fsc", "금융위원회 결정문", "Fsc", "fsc", "결정문일련번호", "ID", "FscService", "안건명", True),
+    "nlrc": Target("nlrc", "노동위원회 결정문", "Nlrc", "nlrc", "결정문일련번호", "ID", "NlrcService", "제목", True),
+    "kcc": Target("kcc", "방송미디어통신위원회 결정문", "Kcc", "kcc", "결정문일련번호", "ID", "KccService", "안건명", True),
+    "iaciac": Target("iaciac", "산업재해보상보험재심사위원회 결정문", "Iaciac", "iaciac", "결정문일련번호", "ID", "IaciacService", "사건", True),
+    "oclt": Target("oclt", "중앙토지수용위원회 결정문", "Oclt", "oclt", "결정문일련번호", "ID", "OcltService", "제목", True),
+    "ecc": Target("ecc", "중앙환경분쟁조정위원회 결정문", "Ecc", "ecc", "결정문일련번호", "ID", "EccService", "사건명", True),
+    "sfc": Target("sfc", "증권선물위원회 결정문", "Sfc", "sfc", "결정문일련번호", "ID", "SfcService", "안건명", True),
+    "nhrck": Target("nhrck", "국가인권위원회 결정문", "Nhrck", "nhrck", "결정문일련번호", "ID", "NhrckService", "사건명", True),
+    # ── 특별행정심판 5종 ──
+    "ttSpecialDecc": Target("ttSpecialDecc", "조세심판원", "Decc", "decc", "특별행정심판재결례일련번호", "ID", "SpecialDeccService", "사건명", True),
+    "kmstSpecialDecc": Target("kmstSpecialDecc", "해양안전심판원", "Decc", "decc", "특별행정심판재결례일련번호", "ID", "SpecialDeccService", "사건명", True),
+    "acrSpecialDecc": Target("acrSpecialDecc", "국민권익위원회 특별행정심판", "Decc", "decc", "특별행정심판재결례일련번호", "ID", "SpecialDeccService", "사건명", True),
+    "adapSpecialDecc": Target("adapSpecialDecc", "인사혁신처 소청심사위원회", "Decc", "decc", "특별행정심판재결례일련번호", "ID", "SpecialDeccService", "사건명", True),
+    "baiPvcs": Target("baiPvcs", "감사원 사전컨설팅", "BaiPvcs", "baiPvcs", "감사원사전컨설팅일련번호", "ID", "BaiPvcsService", "의견서명", True),
+    # ── 부처 1차 법령해석 39종 ──
+    "moeCgmExpc": Target("moeCgmExpc", "교육부 법령해석", "CgmExpc", "cgmExpc", "법령해석일련번호", "ID", "CgmExpcService", "안건명", True),
+    "moelCgmExpc": Target("moelCgmExpc", "고용노동부 법령해석", "CgmExpc", "cgmExpc", "법령해석일련번호", "ID", "CgmExpcService", "안건명", True),
+    "molitCgmExpc": Target("molitCgmExpc", "국토교통부 법령해석", "CgmExpc", "cgmExpc", "법령해석일련번호", "ID", "CgmExpcService", "안건명", True),
+    "moefCgmExpc": Target("moefCgmExpc", "재정경제부 법령해석", "CgmExpc", "cgmExpc", "법령해석일련번호", "ID", "", "안건명", False),
+    "mofCgmExpc": Target("mofCgmExpc", "해양수산부 법령해석", "CgmExpc", "cgmExpc", "법령해석일련번호", "ID", "CgmExpcService", "안건명", True),
+    "moisCgmExpc": Target("moisCgmExpc", "행정안전부 법령해석", "CgmExpc", "cgmExpc", "법령해석일련번호", "ID", "CgmExpcService", "안건명", True),
+    "meCgmExpc": Target("meCgmExpc", "기후에너지환경부 법령해석", "CgmExpc", "cgmExpc", "법령해석일련번호", "ID", "CgmExpcService", "안건명", True),
+    "kcsCgmExpc": Target("kcsCgmExpc", "관세청 법령해석", "CgmExpc", "cgmExpc", "법령해석일련번호", "ID", "CgmExpcService", "안건명", True),
+    "ntsCgmExpc": Target("ntsCgmExpc", "국세청 법령해석", "CgmExpc", "cgmExpc", "법령해석일련번호", "ID", "", "안건명", False),
+    "msitCgmExpc": Target("msitCgmExpc", "과학기술정보통신부 법령해석", "CgmExpc", "cgmExpc", "법령해석일련번호", "ID", "CgmExpcService", "안건명", True),
+    "mpvaCgmExpc": Target("mpvaCgmExpc", "국가보훈부 법령해석", "CgmExpc", "cgmExpc", "법령해석일련번호", "ID", "CgmExpcService", "안건명", True),
+    "mndCgmExpc": Target("mndCgmExpc", "국방부 법령해석", "CgmExpc", "cgmExpc", "법령해석일련번호", "ID", "CgmExpcService", "안건명", True),
+    "mafraCgmExpc": Target("mafraCgmExpc", "농림축산식품부 법령해석", "CgmExpc", "cgmExpc", "법령해석일련번호", "ID", "CgmExpcService", "안건명", True),
+    "mcstCgmExpc": Target("mcstCgmExpc", "문화체육관광부 법령해석", "CgmExpc", "cgmExpc", "법령해석일련번호", "ID", "CgmExpcService", "안건명", True),
+    "mojCgmExpc": Target("mojCgmExpc", "법무부 법령해석", "CgmExpc", "cgmExpc", "법령해석일련번호", "ID", "CgmExpcService", "안건명", True),
+    "mohwCgmExpc": Target("mohwCgmExpc", "보건복지부 법령해석", "CgmExpc", "cgmExpc", "법령해석일련번호", "ID", "CgmExpcService", "안건명", True),
+    "motieCgmExpc": Target("motieCgmExpc", "산업통상부 법령해석", "CgmExpc", "cgmExpc", "법령해석일련번호", "ID", "CgmExpcService", "안건명", True),
+    "mogefCgmExpc": Target("mogefCgmExpc", "성평등가족부 법령해석", "CgmExpc", "cgmExpc", "법령해석일련번호", "ID", "CgmExpcService", "안건명", True),
+    "mofaCgmExpc": Target("mofaCgmExpc", "외교부 법령해석", "CgmExpc", "cgmExpc", "법령해석일련번호", "ID", "CgmExpcService", "안건명", True),
+    "mssCgmExpc": Target("mssCgmExpc", "중소벤처기업부 법령해석", "CgmExpc", "cgmExpc", "법령해석일련번호", "ID", "CgmExpcService", "안건명", True),
+    "mouCgmExpc": Target("mouCgmExpc", "통일부 법령해석", "CgmExpc", "cgmExpc", "법령해석일련번호", "ID", "CgmExpcService", "안건명", True),
+    "molegCgmExpc": Target("molegCgmExpc", "법제처 법령해석", "CgmExpc", "cgmExpc", "법령해석일련번호", "ID", "CgmExpcService", "안건명", True),
+    "mfdsCgmExpc": Target("mfdsCgmExpc", "식품의약품안전처 법령해석", "CgmExpc", "cgmExpc", "법령해석일련번호", "ID", "CgmExpcService", "안건명", True),
+    "mpmCgmExpc": Target("mpmCgmExpc", "인사혁신처 법령해석", "CgmExpc", "cgmExpc", "법령해석일련번호", "ID", "CgmExpcService", "안건명", True),
+    "kmaCgmExpc": Target("kmaCgmExpc", "기상청 법령해석", "CgmExpc", "cgmExpc", "법령해석일련번호", "ID", "CgmExpcService", "안건명", True),
+    "khsCgmExpc": Target("khsCgmExpc", "국가유산청 법령해석", "CgmExpc", "cgmExpc", "법령해석일련번호", "ID", "CgmExpcService", "안건명", True),
+    "rdaCgmExpc": Target("rdaCgmExpc", "농촌진흥청 법령해석", "CgmExpc", "cgmExpc", "법령해석일련번호", "ID", "CgmExpcService", "안건명", True),
+    "npaCgmExpc": Target("npaCgmExpc", "경찰청 법령해석", "CgmExpc", "cgmExpc", "법령해석일련번호", "ID", "CgmExpcService", "안건명", True),
+    "dapaCgmExpc": Target("dapaCgmExpc", "방위사업청 법령해석", "CgmExpc", "cgmExpc", "법령해석일련번호", "ID", "CgmExpcService", "안건명", True),
+    "mmaCgmExpc": Target("mmaCgmExpc", "병무청 법령해석", "CgmExpc", "cgmExpc", "법령해석일련번호", "ID", "CgmExpcService", "안건명", True),
+    "kfsCgmExpc": Target("kfsCgmExpc", "산림청 법령해석", "CgmExpc", "cgmExpc", "법령해석일련번호", "ID", "CgmExpcService", "안건명", True),
+    "nfaCgmExpc": Target("nfaCgmExpc", "소방청 법령해석", "CgmExpc", "cgmExpc", "법령해석일련번호", "ID", "CgmExpcService", "안건명", True),
+    "okaCgmExpc": Target("okaCgmExpc", "재외동포청 법령해석", "CgmExpc", "cgmExpc", "법령해석일련번호", "ID", "CgmExpcService", "안건명", True),
+    "ppsCgmExpc": Target("ppsCgmExpc", "조달청 법령해석", "CgmExpc", "cgmExpc", "법령해석일련번호", "ID", "CgmExpcService", "안건명", True),
+    "kdcaCgmExpc": Target("kdcaCgmExpc", "질병관리청 법령해석", "CgmExpc", "cgmExpc", "법령해석일련번호", "ID", "CgmExpcService", "안건명", True),
+    "kostatCgmExpc": Target("kostatCgmExpc", "국가데이터처 법령해석", "CgmExpc", "cgmExpc", "법령해석일련번호", "ID", "CgmExpcService", "안건명", True),
+    "kipoCgmExpc": Target("kipoCgmExpc", "지식재산처 법령해석", "CgmExpc", "cgmExpc", "법령해석일련번호", "ID", "CgmExpcService", "안건명", True),
+    "kcgCgmExpc": Target("kcgCgmExpc", "해양경찰청 법령해석", "CgmExpc", "cgmExpc", "법령해석일련번호", "ID", "CgmExpcService", "안건명", True),
+    "naaccCgmExpc": Target("naaccCgmExpc", "행정중심복합도시건설청 법령해석", "CgmExpc", "cgmExpc", "법령해석일련번호", "ID", "CgmExpcService", "안건명", True),
 }
 
 # 🔴 **XML 을 주지 않는 target — 부르지 말 것.** 실측(2026-09-08):
@@ -122,6 +199,31 @@ MINISTRY_EXPC_NOTE = (
     "받을 수 없고, 후보 9개는 전부 빈 응답). 법제처 유권해석은 `expc` 로 조회된다.")
 
 
+# 갈래를 사람이 읽기 좋게 묶는다 — 72종을 평평하게 늘어놓으면 고를 수가 없다
+# (CLI 출력도, LLM 에게 주는 도구 응답도 마찬가지다).
+def target_groups() -> dict[str, list[str]]:
+    core = ("law", "eflaw", "elaw", "admrul", "ordin", "lsStmd", "school")
+    judg = ("prec", "detc", "decc")
+    byl = ("licbyl", "admbyl", "ordinbyl")
+    groups: dict[str, list[str]] = {
+        "법령·규칙": [c for c in core if c in TARGETS],
+        "판례·재결": [c for c in judg if c in TARGETS],
+        "법령해석(법제처)": ["expc"],
+        "법령해석(부처 39종)": sorted(c for c in TARGETS if c.endswith("CgmExpc")),
+        "위원회 결정문": sorted(
+            c for c in TARGETS
+            if c not in judg and TARGETS[c].id_field == "결정문일련번호"),
+        "특별행정심판": sorted(c for c in TARGETS if c.endswith("SpecialDecc")),
+        "별표·서식": [c for c in byl if c in TARGETS],
+        "조약·용어": [c for c in ("trty", "lstrm") if c in TARGETS],
+    }
+    known = {c for v in groups.values() for c in v}
+    rest = [c for c in TARGETS if c not in known]
+    if rest:
+        groups["그 밖"] = rest
+    return {k: v for k, v in groups.items() if v}
+
+
 def resolve_target(code: str) -> Target:
     """target 코드 검증 — **호출 전에** 막는다.
 
@@ -138,9 +240,14 @@ def resolve_target(code: str) -> Target:
     if key not in TARGETS:
         near = [k for k in TARGETS if k.lower() == key.lower()]
         hint = f" '{near[0]}' 를 뜻하셨나요?" if near else ""
+        # ⚠️ 72종을 전부 나열하면 오류 메시지가 화면을 덮는다. 묶음만 보이고
+        #    전체는 `law targets` / `law_targets` 로 안내한다.
+        summary = "; ".join(
+            f"{g}: {', '.join(v[:4])}{' …' if len(v) > 4 else ''}"
+            for g, v in target_groups().items())
         raise ValueError(
             f"알 수 없는 target: {key!r}.{hint} "
-            f"가능한 값: {', '.join(f'{k}({v.label})' for k, v in TARGETS.items())}. "
+            f"가능한 값({len(TARGETS)}종) — {summary}. 전체 목록은 `law_targets`. "
             f"⚠️ 없는 target 은 오류가 아니라 **빈 응답(0바이트)** 으로 오므로 "
             f"여기서 막지 않으면 '결과 0건'으로 오인합니다.")
     return TARGETS[key]

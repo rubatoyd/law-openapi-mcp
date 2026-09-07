@@ -325,6 +325,15 @@ class LawClient:
         """
         self._require_oc()
         tgt = resolve_target(target)
+        if not tgt.has_body:
+            # 🔴 실측: 이 갈래들은 본문 조회에 **HTML** 을 돌려준다(별표·서식은 파일이고,
+            #    일부 부처 해석은 XML 본문 서비스가 없다). 부르면 파서가 헛돌 뿐이다.
+            extra = ("별표·서식은 목록 레코드의 `별표서식파일링크`·`별표서식PDF파일링크` 가 "
+                     "원문입니다(HWP/PDF). " if tgt.code.endswith("byl") else
+                     "이 부처는 목록만 제공합니다. ")
+            raise LawError(
+                f"`{tgt.label}`({tgt.code}) 는 XML **본문**이 없습니다(실측: HTML 반환). "
+                f"{extra}목록 결과의 필드를 쓰세요 — 미매핑 필드도 내보내기에 열로 나옵니다.")
         ident = (str(doc_id) or "").strip()
         if not ident:
             raise LawError(
