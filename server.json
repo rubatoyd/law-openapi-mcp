@@ -1,0 +1,38 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.rubatoyd/law-openapi-mcp",
+  "description": "Korean national law information search (statutes, decrees, case law, treaties)",
+  "version": "0.1.0",
+  "repository": {
+    "url": "https://github.com/rubatoyd/law-openapi-mcp",
+    "source": "github"
+  },
+  "websiteUrl": "https://github.com/rubatoyd/law-openapi-mcp",
+  "packages": [
+    {
+      "registryType": "mcpb",
+      "identifier": "https://github.com/rubatoyd/law-openapi-mcp/releases/download/v0.1.0/law-openapi-mcp.mcpb",
+      "version": "0.1.0",
+      "transport": {
+        "type": "stdio"
+      },
+      "fileSha256": "__MCPB_SHA256__",
+      "environmentVariables": [
+        {
+          "name": "LAW_OC",
+          "description": "User identifier for the Korean Ministry of Government Legislation OPEN API (open.law.go.kr). This is the local part of the e-mail address used at sign-up, chosen by the user. Not a secret. Required.",
+          "isRequired": true,
+          "isSecret": false,
+          "format": "string"
+        },
+        {
+          "name": "LAW_OS_TRUST",
+          "description": "Use the OS trust store for TLS (1=on, default). Set 0 to disable. Needed on school/corporate networks that intercept SSL.",
+          "isRequired": false,
+          "isSecret": false,
+          "format": "string"
+        }
+      ]
+    }
+  ]
+}

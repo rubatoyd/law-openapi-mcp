@@ -1,0 +1,94 @@
+{
+  "manifest_version": "0.3",
+  "name": "law-openapi-mcp",
+  "display_name": "국가법령정보 검색기 (law-openapi-mcp)",
+  "version": "0.1.0",
+  "description": "법제처 국가법령정보 OPEN API 수집기 — 현행법령·행정규칙·자치법규·판례·헌재결정례·법령해석례·조약을 검색하고 조문 본문까지 받는다. 수집 단위는 인용 단위(법령 하나가 문헌 하나)이며, 갈래별 응답 태그·HTTP 200 실패 봉투·조문 중첩 구조를 라이브 실측으로 확정했다. xlsx/csv/json/sqlite 내보내기",
+  "author": {
+    "name": "Yeondong Yang",
+    "url": "https://github.com/rubatoyd/law-openapi-mcp"
+  },
+  "homepage": "https://github.com/rubatoyd/law-openapi-mcp",
+  "documentation": "https://github.com/rubatoyd/law-openapi-mcp#readme",
+  "license": "MIT",
+  "keywords": [
+    "law",
+    "legislation",
+    "statute",
+    "case-law",
+    "moleg",
+    "korea",
+    "openapi",
+    "bibliography",
+    "citation"
+  ],
+  "server": {
+    "type": "binary",
+    "entry_point": "uvx",
+    "mcp_config": {
+      "command": "uvx",
+      "args": [
+        "--from",
+        "git+https://github.com/rubatoyd/law-openapi-mcp",
+        "law-mcp"
+      ],
+      "env": {
+        "LAW_OC": "${user_config.oc}",
+        "LAW_OS_TRUST": "${user_config.os_trust}"
+      }
+    }
+  },
+  "user_config": {
+    "oc": {
+      "type": "string",
+      "title": "법제처 OPEN API 사용자 식별자 (OC)",
+      "description": "open.law.go.kr 에서 OPEN API 를 신청할 때 지정한 값 — 가입 이메일의 @ 앞부분입니다. 비밀값이 아니며 요청 URL에 평문으로 실립니다.",
+      "sensitive": false,
+      "required": true,
+      "default": ""
+    },
+    "os_trust": {
+      "type": "string",
+      "title": "OS 신뢰저장소 TLS (교육망/사내망)",
+      "description": "교육망·사내망 SSL 인터셉션 환경이면 1(기본). 1=OS 신뢰저장소 사용, 0=비활성.",
+      "required": false,
+      "default": "1"
+    }
+  },
+  "tools": [
+    {
+      "name": "law_status",
+      "description": "연결 점검 — OC 보유 여부 + 법제처 OPEN API 실제 왕복 1회"
+    },
+    {
+      "name": "law_targets",
+      "description": "다룰 수 있는 갈래(현행법령·행정규칙·자치법규·판례·헌재결정례·법령해석례·조약 등)와 갈래별 실측 스키마. 갈래마다 응답 태그와 본문 조회 파라미터(MST/ID)가 다르고 이름에서 유추할 수 없어 이 표가 필요하다"
+    },
+    {
+      "name": "law_search",
+      "description": "한 갈래를 검색한다. total·truncated·경고를 동반 반환. ⚠️ query 를 비우면 오류가 아니라 전체 카탈로그(현행법령 5,614건)가 오므로 빈 검색어는 거부한다. page 하드 상한이 없어 max_records 만 올리면 전량 회수가 가능하다"
+    },
+    {
+      "name": "law_body",
+      "description": "식별자 1건의 본문 — 조문(항·호 중첩 포함)·판시사항·질의요지·첨부파일. ⚠️ 조문여부='전문'은 장·절 표제이지 조문이 아니다. 판례는 데이터출처에 따라 본문이 없을 수 있으며(대법원 ○ / 국세법령정보시스템 ✕) 그때는 오류가 아니라 결손으로 보고한다"
+    },
+    {
+      "name": "law_collect",
+      "description": "갈래 × 검색어 합집합을 모아 xlsx/csv/json/sqlite 로 저장. 정규화 열 뒤에 원본 필드를 열로 승격해 매핑되지 않은 값도 파일에서 볼 수 있다. 한 축이 실패해도 나머지는 계속 수집하고 failed_axes 로 보고한다"
+    },
+    {
+      "name": "law_citation",
+      "description": "한 건을 서지(인용) 필드로 매핑 — 발령주체·호·공포일·시행일·제정기관. 수집 단위는 인용 단위이므로 법령 하나가 문헌 하나이고, 조문은 인용 위치로 넣는다"
+    }
+  ],
+  "compatibility": {
+    "platforms": [
+      "win32",
+      "darwin",
+      "linux"
+    ],
+    "runtimes": {
+      "python": ">=3.10"
+    }
+  }
+}
