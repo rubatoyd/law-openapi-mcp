@@ -1,5 +1,19 @@
 # law-openapi-mcp
 
+<!-- mcp-name: io.github.rubatoyd/law-openapi-mcp -->
+
+[![CI](https://github.com/rubatoyd/law-openapi-mcp/actions/workflows/ci.yml/badge.svg)](https://github.com/rubatoyd/law-openapi-mcp/actions/workflows/ci.yml)
+[![Release](https://img.shields.io/github/v/release/rubatoyd/law-openapi-mcp)](https://github.com/rubatoyd/law-openapi-mcp/releases/latest)
+[![Downloads](https://img.shields.io/github/downloads/rubatoyd/law-openapi-mcp/total?label=downloads)](https://github.com/rubatoyd/law-openapi-mcp/releases)
+
+<!-- usage:start -->
+> 📈 **사용량** — 최근 14일 조회 **0**회(고유 0) · 클론 **0**회(고유 0) · 릴리스 자산 누적 다운로드 **0**
+>
+> ![일별 클론·조회 추이](docs/usage.svg)
+>
+> <sub>2026-09-07 자동 갱신 · 전체 이력은 [`docs/usage.csv`](docs/usage.csv). GitHub 트래픽 통계는 14일 창만 제공하므로 이 저장소가 매일 찍어 누적한다.</sub>
+<!-- usage:end -->
+
 법제처 **국가법령정보 OPEN API**(law.go.kr DRF)를 검색·수집하는 MCP 서버 + CLI.
 
 현행법령·행정규칙·자치법규·판례·헌재결정례·행정심판례·법령해석례(법제처 + 부처 39종)·
